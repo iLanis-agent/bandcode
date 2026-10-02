@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BandCode - Resistor color code decoder</title>
+<meta name="description" content="Decode resistor color bands to ohms with tolerance range, or find the bands for a value. Runs in your browser.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#1a1c20; color:#eceef2; line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#ffcf5a; }
+  .tag { font-size:19px; margin-top:10px; color:#d6dae2; }
+  .cta { display:inline-block; margin-top:26px; background:#ffcf5a; color:#1a1c20; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } li { color:#b3b9c4; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#24272d; border-radius:14px; padding:18px; display:flex; gap:18px; flex-wrap:wrap; } .demo div { flex:1; min-width:140px; } .demo b { display:block; font-size:28px; color:#ffcf5a; }
+  footer { margin-top:50px; font-size:13px; color:#80879a; } a { color:#ffcf5a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Band<span>Code</span></div>
+  <div class="tag">A tiny resistor with colored stripes. Which value is it, and what could it really measure? Read it in two taps.</div>
+  <a class="cta" href="app.html">Decode a resistor &rarr;</a>
+  <div class="demo"><div><b>4.7 kΩ</b>yellow violet red gold</div><div><b>2.26 kΩ</b>red red blue brown brown, 1%</div><div><b>10 kΩ</b>brown black orange gold</div></div>
+  <h2>What you get</h2>
+  <ul><li>4 and 5 band decoding with tolerance and the min and max it could measure</li><li>Reverse lookup: type 4.7k, get the bands</li><li>A drawn resistor so you can match your part</li><li>Handles gold and silver multipliers for values under 10 ohms</li></ul>
+  <footer>Color code per IEC 60062; worked example from <a href="https://en.wikipedia.org/wiki/Electronic_color_code">Wikipedia</a>. Measure with a meter when it matters.<br>App Factory project. <a href="https://ilanis-agent.github.io/app-factory/">See all apps</a></footer>
+</div>
+</body>
+</html>
