@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BandCode - Resistor color code decoder</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#1a1c20; color:#eceef2; line-height:1.5; }
+  .wrap { max-width:640px; margin:0 auto; padding:26px 18px 60px; }
+  a { color:#ffcf5a; } h1 { font-size:28px; } h1 span { color:#ffcf5a; } .sub { color:#9fa5b0; margin:4px 0 18px; }
+  .card { background:#24272d; border-radius:14px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:13px; color:#9fa5b0; margin:10px 0 4px; }
+  .seg { display:flex; gap:6px; } .seg button { flex:1; padding:10px; border-radius:9px; border:1px solid #444a55; background:#1a1c20; color:#9fa5b0; font-size:15px; cursor:pointer; } .seg button.on { background:#ffcf5a; color:#1a1c20; font-weight:700; border-color:#ffcf5a; }
+  select, input { width:100%; padding:10px; border-radius:9px; border:1px solid #444a55; background:#1a1c20; color:#eceef2; font-size:16px; font-family:inherit; }
+  input.bad { border-color:#e0746a; }
+  .bands { display:flex; gap:8px; flex-wrap:wrap; } .bands > div { flex:1; min-width:90px; }
+  .res { height:56px; margin:16px auto 6px; max-width:420px; background:#c8a97a; border-radius:28px; position:relative; display:flex; justify-content:center; gap:16px; align-items:stretch; padding:0 54px; }
+  .res::before, .res::after { content:''; position:absolute; top:26px; width:44px; height:4px; background:#999; } .res::before { left:-40px; } .res::after { right:-40px; }
+  .res i { display:block; width:16px; margin:0; border-radius:2px; border-left:1px solid #0003; border-right:1px solid #0003; }
+  .big { font-size:44px; font-weight:800; color:#ffcf5a; } .lbl { font-size:13px; color:#9fa5b0; } .note { font-size:14px; color:#d6dae2; margin-top:8px; } h2 { font-size:17px; margin-bottom:8px; } .small { font-size:13px; color:#9fa5b0; }
+  .grid { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; } .grid > div { flex:1; min-width:120px; background:#1a1c20; border-radius:10px; padding:10px; } .grid b { display:block; font-size:18px; }
+  .warn { background:#3d2a20; border:1px solid #b9703f; color:#ffddc4; padding:12px; border-radius:10px; margin-top:12px; font-size:14px; }
+  .sw { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:6px; border:1px solid #6669; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Band<span>Code</span></h1>
+  <div class="sub">Read a resistor's color bands, or find the bands for the value you need.</div>
+  <div class="card">
+    <div class="seg" id="mode"><button data-m="dec" class="on">Bands to value</button><button data-m="enc">Value to bands</button></div>
+    <div id="decui"><label>Bands</label><div class="seg" id="nb"><button data-n="4" class="on">4 bands</button><button data-n="5">5 bands</button></div><div class="bands" id="sel"></div></div>
+    <div id="encui" style="display:none"><div class="bands"><div><label for="val">Resistance (like 4.7k or 330 or 2k26)</label><input id="val" value="4.7k"></div><div><label for="tolsel">Tolerance</label><select id="tolsel"></select></div></div></div>
+    <div class="res" id="res"></div>
+  </div>
+  <div class="card" id="out"></div>
+  <div class="card"><h2>About this</h2><div class="small">Digits black 0, brown 1, red 2, orange 3, yellow 4, green 5, blue 6, violet 7, grey 8, white 9. The multiplier band is a power of ten (gold x0.1, silver x0.01). Gold is 5% and silver 10%; a 5-band resistor with a brown last band is usually 1%. Worked example from <a href="https://en.wikipedia.org/wiki/Electronic_color_code">Wikipedia</a>: red red blue brown brown = 2.26 kΩ at 1%. Which end is the start is not always clear on a real part; the tolerance band is usually set apart or gold or silver. Measure with a meter when it matters. Runs in your browser.</div></div>
+</div>
+<script src="engine.js"></script>
+<script>
+var $ = function (i) { return document.getElementById(i); }, mode = 'dec', nb = 4, bands = ['yellow', 'violet', 'red', 'gold'];
+var MULTS = Band.DIGIT.concat(['gold', 'silver']), TOLS = Object.keys(Band.TOL).filter(function (k) { return k !== 'none'; });
+function opt(s, list, val) { s.innerHTML = ''; list.forEach(function (c) { var o = document.createElement('option'); o.value = c; o.textContent = c; s.appendChild(o); }); s.value = val; }
+function buildSel() {
+  var nd = nb === 5 ? 3 : 2, h = '', i; $('sel').innerHTML = '';
+  var kinds = []; for (i = 0; i < nd; i++) kinds.push(['Digit ' + (i + 1), Band.DIGIT]); kinds.push(['Multiplier', MULTS]); kinds.push(['Tolerance', TOLS]);
+  if (bands.length !== nd + 2) bands = nb === 5 ? ['brown', 'black', 'black', 'red', 'brown'] : ['yellow', 'violet', 'red', 'gold'];
+  kinds.forEach(function (k, j) { var d = document.createElement('div'), l = document.createElement('label'), s = document.createElement('select'); l.textContent = k[0]; d.appendChild(l); d.appendChild(s); $('sel').appendChild(d); opt(s, k[1], bands[j]); s.onchange = function () { bands[j] = s.value; render(); }; });
+}
+function paint(cols) { $('res').innerHTML = cols.map(function (c) { return '<i style="background:' + Band.HEX[c] + '"></i>'; }).join(''); }
+function render() {
+  var h = '';
+  if (mode === 'dec') {
+    var r = Band.decode(bands); paint(bands);
+    h = '<div class="lbl">Resistance</div><div class="big" id="ohms">' + Band.fmt(r.ohms) + '</div><div class="note" id="tol">Tolerance ' + r.tol + '%</div><div class="grid"><div><span class="lbl">Could measure as low as</span><b id="min">' + Band.fmt(r.min) + '</b></div><div><span class="lbl">As high as</span><b id="max">' + Band.fmt(r.max) + '</b></div></div>';
+  } else {
+    var o = Band.parse($('val').value), tc = $('tolsel').value; $('val').className = o ? '' : 'bad';
+    if (!o) { paint([]); h = '<div class="warn" id="err">Enter a value like 4.7k, 330, 2k26 or 1M.</div>'; }
+    else {
+      var b = Band.encode(o, 2, tc), b3 = Band.encode(o, 3, tc);
+      if (b3 && (TOL_ONLY3(tc) || !b)) b = b3;
+      if (!b && !b3) { paint([]); h = '<div class="warn" id="err">That value cannot be written exactly with color bands (0.01 Ω to 9.9 GΩ, two or three significant digits).</div>'; }
+      else { paint(b); h = '<div class="lbl">Bands for ' + Band.fmt(o) + ' at ' + Band.TOL[tc] + '%</div><div class="note" id="bands" style="font-size:20px;color:#fff">' + b.map(function (c) { return '<span style="white-space:nowrap"><span class="sw" style="background:' + Band.HEX[c] + '"></span>' + c + '</span>'; }).join(' &rarr; ') + '</div>'; if (b.length === 4 && b3) h += '<div class="note">Also as 5 bands: ' + b3.join(', ') + '</div>'; if (b.length === 5 && !Band.encode(o, 2, tc)) h += '<div class="note">This value needs three digit bands.</div>'; }
+    }
+  }
+  $('out').innerHTML = h;
+}
+function TOL_ONLY3(tc) { return Band.TOL[tc] <= 2; }
+opt($('tolsel'), TOLS, 'gold');
+Array.prototype.forEach.call($('mode').querySelectorAll('button'), function (b) { b.onclick = function () { Array.prototype.forEach.call($('mode').querySelectorAll('button'), function (x) { x.className = ''; }); b.className = 'on'; mode = b.getAttribute('data-m'); $('decui').style.display = mode === 'dec' ? '' : 'none'; $('encui').style.display = mode === 'enc' ? '' : 'none'; render(); }; });
+Array.prototype.forEach.call($('nb').querySelectorAll('button'), function (b) { b.onclick = function () { Array.prototype.forEach.call($('nb').querySelectorAll('button'), function (x) { x.className = ''; }); b.className = 'on'; nb = +b.getAttribute('data-n'); bands = []; buildSel(); render(); }; });
+$('val').oninput = render; $('tolsel').onchange = render;
+buildSel(); render();
+</script>
+</body>
+</html>
